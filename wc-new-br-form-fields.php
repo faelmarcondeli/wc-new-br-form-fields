@@ -1,3 +1,4 @@
+<?php
 /**
  * Plugin Name: WooCommerce Novos Campos do Registro e Checkout
  * Description: Adiciona novos campos ao formulário de registro e finalização de compras
