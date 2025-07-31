@@ -192,7 +192,7 @@ function validate_brazilian_field_ajax(){
     switch($type){
         case 'cpf':
             $valid = Extra_Checkout_Fields_For_Brazil_Formatting::is_cpf($value);
-            $msg   = $valid?'':'CPF invlido';
+            $msg   = $valid?'':'CPF inválido';
             break;
         case 'cnpj':
             $valid = Extra_Checkout_Fields_For_Brazil_Formatting::is_cnpj($value);
