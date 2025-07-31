@@ -7,6 +7,27 @@
  * Text Domain: wc-new-br-form-fields
  */
 
+// FL-LABELS ON MY_ACCOUNT_PAGE
+function flatsome_account_scripts() {
+  if( is_account_page() && get_theme_mod('checkout_floating_labels', 0)) {
+    wp_enqueue_script( 'flatsome-woocommerce-floating-labels', get_template_directory_uri() .'/assets/libs/float-labels.min.js', array( 'flatsome-theme-woocommerce-js' ), '3.5', true );
+    wp_dequeue_style( 'selectWoo' );
+    wp_deregister_style( 'selectWoo' );
+    wp_dequeue_script( 'selectWoo' );
+    wp_deregister_script( 'selectWoo' );
+  }
+}
+
+add_action( 'wp_enqueue_scripts', 'flatsome_account_scripts', 10 );
+function flatsome_account_body_classes( $classes ) {
+  if( is_account_page() && get_theme_mod('checkout_floating_labels', 0)) {
+    $classes[] = 'fl-labels';
+  }
+  return $classes;
+  
+}
+add_filter( 'body_class', 'flatsome_account_body_classes');
+
 //NOVO FORMULARIO DE REGISTRO
 // 1) Adiciona no formulário de registro
 add_action( 'woocommerce_register_form_start', function() {
@@ -25,6 +46,7 @@ add_action( 'woocommerce_register_form_start', function() {
     </p>
 
     <div id="pj_fields" style="<?php echo $saved === '2' ? '' : 'display:block;'; ?>">
+        
         <p class="form-row form-row-wide fl-is-required">
             <label for="billing_cnpj" class="fl-label">CNPJ <abbr class="required">*</abbr></label>
             <input type="text" class="input-text" name="billing_cnpj" id="billing_cnpj"
@@ -34,21 +56,19 @@ add_action( 'woocommerce_register_form_start', function() {
         </p>
 
         <p class="form-row form-row-wide">
-            <label for="billing_ie" class="fl-label">Inscrição Estadual</label>
-            <div style="position: relative;">
-                <input type="text" class="input-text fl-input" name="billing_ie" id="billing_ie"
+        <label for="billing_ie" class="fl-label">Inscrição Estadual</label>
+        <div style="position: relative;">
+            <input type="text" class="input-text fl-input" name="billing_ie" id="billing_ie"
                        data-bmw-mask="ie"
                        value="<?php echo esc_attr( get_user_meta( get_current_user_id(), 'billing_ie', true ) ); ?>"
-                       style="padding-right:90px; height:3em;"/>
-                <label style="position: absolute; right: 10px; top: 50%; transform: translateY(-90%); font-size: 0.9em; display: flex; align-items: center; cursor: pointer; background: #fff; padding-left: 5px;">
-        			<input type="checkbox" id="ie_isento_checkbox" style="margin-right: 5px; margin-bottom: 3px !important;" />
-        			Sou isento (Não quero informar)
-        		</label>
-            </div>
+                       style="border-radius:5px; padding-right:90px; height:3em;"/>
+            <label style="position: absolute; right: 10px; top: 50%; transform: translateY(-90%); font-size: 0.9em; display: flex; align-items: center; cursor: pointer; background: #fff; padding-left: 5px;">
+            <input type="checkbox" id="ie_isento_checkbox" style="margin-right: 5px; margin-bottom: 3px !important;" />Sou isento (Não quero informar)</label>
+        </div>
             <span id="ie_error" style="color:red; display:none;"></span>
         </p>
+        
     </div>
-
     <script>
     document.addEventListener('DOMContentLoaded', function(){
         // 2) Corrige os rótulos dos campos obrigatórios
@@ -230,32 +250,75 @@ add_action('woocommerce_created_customer', function($cust_id){
     
 });
 
+/**
+ * Torna determinados campos somente-leitura se já houver valor salvo.
+ * Coloque este trecho em um plugin ou no functions.php do tema-filho.
+ */
+add_action( 'wp_enqueue_scripts', 'rm_readonly_account_checkout_fields' );
+
+function rm_readonly_account_checkout_fields() {
+
+	// Executa apenas onde precisamos
+	if ( ! ( is_account_page() || is_checkout() ) ) {
+		return;
+	}
+
+	// Garante que jQuery esteja presente
+	wp_enqueue_script( 'jquery' );
+
+	// Registramos um “script fantasma” só para anexar o inline depois dele
+	wp_register_script( 'nbff-fields', false, [ 'jquery' ], '1.0', true );
+	wp_enqueue_script(  'nbff-fields' );
+
+	$selectors = [
+		'#billing_email',
+		'#account_email',
+		'#billing_company',
+		'#billing_cnpj',
+		'#billing_cpf',
+		'#billing_ie',
+		'#account_display_name',
+	];
+
+	$js = sprintf(
+		"( function( $ ) {
+			'use strict';
+
+			// Estilos aplicados quando bloqueado
+			var styles = {
+				'background-color' : '#f1f1f1',
+				'touch-action'     : 'none',
+				'box-shadow'       : 'none'
+			};
+
+			// Função que tranca os campos preenchidos
+			function lockFields() {
+				$( '%s' ).each( function () {
+					var \$field = $( this );
+					if ( \$field.val() ) {
+						\$field.prop( 'readonly', true ).css( styles );
+					}
+				} );
+			}
+
+			// 1ª execução
+			$( document ).ready( lockFields );
+
+			// Reexecuta quando o checkout recarrega via AJAX
+			$( document.body ).on( 'updated_checkout', lockFields );
+		} )( jQuery );",
+		implode( ',', $selectors )
+	);
+
+	wp_add_inline_script( 'nbff-fields', $js );
+}
+
+    
 // NEW REGISTER_FIELDS
 function woo_extra_register_fields() {
    if( is_account_page() || is_checkout() ) {
     wp_enqueue_script( 'woocommerce-extra-checkout-fields-for-brazil-front' );
     wp_enqueue_script( 'valid_checkout_fields' );
-    
-    add_action( 'woocommerce_account_content', 'make_readonly' );
-    add_action( 'woocommerce_after_checkout_form', 'make_readonly' );
-
-    function make_readonly() {
-        ?>
-        <script type='text/javascript'>
-        jQuery(function($){
-            // Para cada campo, verifica se tem valor e define como readonly
-            $('input#billing_email, input#account_email, input#billing_company, input#billing_cnpj, input#billing_cpf, input#billing_ie, input#account_display_name').each(function(){
-            if ($(this).val()) {
-                $(this).prop('readonly', true);
-                $(this).css({'background-color': '#f1f1f1','touch-action': 'none','box-shadow': 'unset'
-            });
-        // Adicionando uma cor de fundo para indicar que o campo  somente leitura
-            }
-            });
-        });
-        </script>
-        <?php
-    }
     ?> 
 
     <p class="form-row form-row-first" id="billing_first_name_field">
