@@ -230,31 +230,33 @@ add_action('woocommerce_created_customer', function($cust_id){
     
 });
 
-
 // NEW REGISTER_FIELDS
 function woo_extra_register_fields() {
    if( is_account_page() || is_checkout() ) {
     wp_enqueue_script( 'woocommerce-extra-checkout-fields-for-brazil-front' );
     wp_enqueue_script( 'valid_checkout_fields' );
-    ?> 
+    
+    add_action( 'woocommerce_account_content', 'make_readonly' );
+    add_action( 'woocommerce_after_checkout_form', 'make_readonly' );
 
-  function make_readonly() {
-      ?>
-      <script type='text/javascript'>
-      jQuery(function($){
-          // Para cada campo, verifica se tem valor e define como readonly
-          $('input#billing_email, input#account_email, input#billing_company, input#billing_cnpj, input#billing_cpf, input#billing_ie, input#account_display_name').each(function(){
-              if ($(this).val()) {
-                  $(this).prop('readonly', true);
-                  $(this).css({'background-color': '#f1f1f1','touch-action': 'none','box-shadow': 'unset'
-          });
-    // Adicionando uma cor de fundo para indicar que o campo  somente leitura
-              }
-          });
-      });
-      </script>
-      <?php
-  }
+    function make_readonly() {
+        ?>
+        <script type='text/javascript'>
+        jQuery(function($){
+            // Para cada campo, verifica se tem valor e define como readonly
+            $('input#billing_email, input#account_email, input#billing_company, input#billing_cnpj, input#billing_cpf, input#billing_ie, input#account_display_name').each(function(){
+            if ($(this).val()) {
+                $(this).prop('readonly', true);
+                $(this).css({'background-color': '#f1f1f1','touch-action': 'none','box-shadow': 'unset'
+            });
+        // Adicionando uma cor de fundo para indicar que o campo  somente leitura
+            }
+            });
+        });
+        </script>
+        <?php
+    }
+    ?> 
 
     <p class="form-row form-row-first" id="billing_first_name_field">
     <label for="billing_first_name"><?php _e( 'First name', 'woocommerce' ); ?><span class="required">*</span></label>
@@ -493,11 +495,11 @@ function custom_email_confirmation() {
 }
 
 /*
- * 7) === Capitalizaão e lowercase (mantido)
- */
+* 7) === Capitalizaão e lowercase (mantido)
+*/
 add_action('wp_footer', function() {
-    if ( is_checkout() || is_account_page() ) { ?>
-        <script>
+if ( is_checkout() || is_account_page() ) { ?>
+	<script>
         document.addEventListener('DOMContentLoaded', function () {
             const inputs = document.querySelectorAll('.woocommerce input[type="text"], .woocommerce input[type="email"]');
 
@@ -516,7 +518,6 @@ add_action('wp_footer', function() {
                 }
             });
         });
-        </script>
-    <?php }
+	</script>
+<?php }
 });
-
